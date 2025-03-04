@@ -14,33 +14,45 @@ contract CommitReveal {
 
   mapping (address => Commit) public commits;
 
-  function commit(bytes32 dataHash) public {
-    commits[msg.sender].commit = dataHash;
-    commits[msg.sender].block = uint64(block.number);
-    commits[msg.sender].revealed = false;
-    emit CommitHash(msg.sender,commits[msg.sender].commit,commits[msg.sender].block);
+  function commit(address player, bytes32 dataHash) public {
+    commits[player].commit = dataHash;
+    commits[player].block = uint64(block.number);
+    commits[player].revealed = false;
+    emit CommitHash(player,commits[player].commit,commits[player].block);
   }
   event CommitHash(address sender, bytes32 dataHash, uint64 block);
 
-  function reveal(bytes32 revealHash) public {
+  function reveal(address player, bytes32 revealHash) public {
     //make sure it hasn't been revealed yet and set it to revealed
-    require(commits[msg.sender].revealed==false,"CommitReveal::reveal: Already revealed");
-    commits[msg.sender].revealed=true;
+    require(commits[player].revealed==false,"CommitReveal::reveal: Already revealed");
+    commits[player].revealed=true;
     //require that they can produce the committed hash
-    require(getHash(revealHash)==commits[msg.sender].commit,"CommitReveal::reveal: Revealed hash does not match commit");
+    require(getHash(revealHash)==commits[player].commit,"CommitReveal::reveal: Revealed hash does not match commit");
     //require that the block number is greater than the original block
-    require(uint64(block.number)>commits[msg.sender].block,"CommitReveal::reveal: Reveal and commit happened on the same block");
+    require(uint64(block.number)>commits[player].block,"CommitReveal::reveal: Reveal and commit happened on the same block");
     //require that no more than 250 blocks have passed
-    require(uint64(block.number)<=commits[msg.sender].block+250,"CommitReveal::reveal: Revealed too late");
+    require(uint64(block.number)<=commits[player].block+250,"CommitReveal::reveal: Revealed too late");
     //get the hash of the block that happened after they committed
-    bytes32 blockHash = blockhash(commits[msg.sender].block);
+    bytes32 blockHash = blockhash(commits[player].block);
     //hash that with their reveal that so miner shouldn't know and mod it with some max number you want
     uint random = uint(keccak256(abi.encodePacked(blockHash,revealHash)))%max;
-    emit RevealHash(msg.sender,revealHash,random);
+    emit RevealHash(player,revealHash,random);
   }
   event RevealHash(address sender, bytes32 revealHash, uint random);
 
   function getHash(bytes32 data) public pure returns(bytes32){
     return keccak256(abi.encodePacked(data));
+  }
+
+  function getPlayerCommit (address player) public view returns (bytes32) {
+    return commits[player].commit;
+  }
+
+  function getPlayerRevealed (address player) public view returns (bool)  {
+    return commits[player].revealed;
+  }
+
+  function resetPlayerCommits (address player) public {
+    delete commits[player];
   }
 }
