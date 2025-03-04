@@ -3,12 +3,18 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
+import "./CommitReveal.sol";
+
 contract RPSLS {
+    CommitReveal public commitReveal;
+
     uint public numPlayer = 0;
     uint public reward = 0;
-    uint public numInput = 0;
-    mapping (address => uint) public player_choice; // 0 - Rock, 1 - Paper , 2 - Scissors, 3 - Spock, 4 - Lizard
+    uint public numRevealed = 0;
+
+    mapping(address => uint) public player_choice; // 0 - Rock, 1 - Paper , 2 - Scissors, 3 - Spock, 4 - Lizard
     mapping(address => bool) public player_not_played;
+
     address[] public players;
 
     address[4] public whitelistedAddresses = [
@@ -18,9 +24,61 @@ contract RPSLS {
         0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB
     ];
 
-    function isWhitelisted(address player) public view returns (bool) {
+    constructor(address _commitRevealAddress) {
+        commitReveal = CommitReveal(_commitRevealAddress);
+    }
+
+    function generateRandomInput(uint8 choice) public view returns (bytes32, bytes32) {
+        require(choice < 5, "Invalid choice (must be 0-4)");
+
+        // Generate 31 random bytes using keccak256 (pseudo-random)
+        bytes32 randBytes = keccak256(abi.encodePacked(block.timestamp, msg.sender));
+
+        // Clear the last byte to zero
+        randBytes &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00;
+        
+        // Add choice to the last byte
+        bytes32 dataInput = randBytes | bytes32(uint256(choice)); 
+
+        // Return both the raw input and its hash
+        return (dataInput, keccak256(abi.encodePacked(dataInput)));
+    }
+
+    function getHash(bytes32 data) public view returns(bytes32){
+        return commitReveal.getHash(data);
+    }
+
+    function commitChoice(bytes32 dataHash) public {
+        require(numPlayer == 2, "Need 2 players.");
+        commitReveal.commit(msg.sender, dataHash);
+    }
+
+    function revealChoice(bytes32 revealData) public {
+        require(numPlayer == 2, "Game has not started.");
+
+        // Extract commit data from tuple
+        bytes32 commit = commitReveal.getPlayerCommit(msg.sender);
+        bool isRevealed = commitReveal.getPlayerRevealed(msg.sender);
+
+        require(commit != bytes32(0), "Commit not found.");
+        require(!isRevealed, "Already revealed.");
+
+        // Call reveal in CommitReveal.sol
+        commitReveal.reveal(msg.sender, revealData);
+
+        // Extract choice from the last byte of revealData
+        uint choice = uint(uint8(revealData[31])) % 5;
+        player_choice[msg.sender] = choice;
+        numRevealed++;
+
+        if (numRevealed == 2) {
+            _checkWinnerAndPay();
+        }
+    }
+
+    function isWhitelisted(address _player) public view returns (bool) {
         for (uint i = 0; i < whitelistedAddresses.length; i++) {
-            if (whitelistedAddresses[i] == player) {
+            if (whitelistedAddresses[i] == _player) {
                 return true;
             }
         }
@@ -28,7 +86,7 @@ contract RPSLS {
     }
     function addPlayer() public payable {
         require(isWhitelisted(msg.sender), "Not authorized to play.");
-        require(numPlayer < 2, "Players Full");
+        require(numPlayer < 2, "Players Full.");
         if (numPlayer > 0) {
             require(msg.sender != players[0]);
         }
@@ -39,18 +97,6 @@ contract RPSLS {
         numPlayer++;
     }
 
-    function input(uint choice) public  {
-        require(numPlayer == 2);
-        require(player_not_played[msg.sender]);
-        // add choices 3 for Spock and 4 for Lizard
-        require(choice == 0 || choice == 1 || choice == 2 || choice == 3 || choice == 4);
-        player_choice[msg.sender] = choice;
-        player_not_played[msg.sender] = false;
-        numInput++;
-        if (numInput == 2) {
-            _checkWinnerAndPay();
-        }
-    }
 
     function _checkWinnerAndPay() private {
         uint p0Choice = player_choice[players[0]];
@@ -76,12 +122,13 @@ contract RPSLS {
 
     function resetGame() private {
         for (uint i = 0; i < players.length; i++) {
+            commitReveal.resetPlayerCommits(players[i]);
             delete player_choice[players[i]];
             delete player_not_played[players[i]];
         }
         delete players;
         numPlayer = 0;
         reward = 0;
-        numInput = 0;
+        numRevealed = 0;
     }
 }
