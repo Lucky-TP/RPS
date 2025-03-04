@@ -3,7 +3,7 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
-contract RPS {
+contract RPSLS {
     uint public numPlayer = 0;
     uint public reward = 0;
     uint public numInput = 0;
