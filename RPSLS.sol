@@ -56,5 +56,17 @@ contract RPS {
             account0.transfer(reward / 2);
             account1.transfer(reward / 2);
         }
+        resetGame();
+    }
+
+    function resetGame() private {
+        for (uint i = 0; i < players.length; i++) {
+            delete player_choice[players[i]];
+            delete player_not_played[players[i]];
+        }
+        delete players;
+        numPlayer = 0;
+        reward = 0;
+        numInput = 0;
     }
 }
