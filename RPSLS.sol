@@ -6,14 +6,29 @@ pragma solidity >=0.7.0 <0.9.0;
 contract RPS {
     uint public numPlayer = 0;
     uint public reward = 0;
+    uint public numInput = 0;
     mapping (address => uint) public player_choice; // 0 - Rock, 1 - Paper , 2 - Scissors, 3 - Spock, 4 - Lizard
     mapping(address => bool) public player_not_played;
     address[] public players;
 
-    uint public numInput = 0;
+    address[4] public whitelistedAddresses = [
+        0x5B38Da6a701c568545dCfcB03FcB875f56beddC4,
+        0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2,
+        0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db,
+        0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB
+    ];
 
+    function isWhitelisted(address player) public view returns (bool) {
+        for (uint i = 0; i < whitelistedAddresses.length; i++) {
+            if (whitelistedAddresses[i] == player) {
+                return true;
+            }
+        }
+        return false;
+    }
     function addPlayer() public payable {
-        require(numPlayer < 2);
+        require(isWhitelisted(msg.sender), "Not authorized to play.");
+        require(numPlayer < 2, "Players Full");
         if (numPlayer > 0) {
             require(msg.sender != players[0]);
         }
