@@ -242,3 +242,11 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 - ลบข้อมูล players ปัจจุบัน
 - reset ค่าต่างๆ (numPlayer, reward, numRevealed)
 - reset ค่าเวลาให้เริ่มคิด startTime ใหม่
+
+---
+
+## 📌 How to Deploy
+### Deploy Contracts
+- Deploy CommitReveal.sol
+- Deploy TimeUnit.sol
+- Deploy RPSLS.sol, passing the addresses of CommitReveal and TimeUnit.
