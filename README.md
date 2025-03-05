@@ -53,7 +53,7 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 - The game starts when **2 players have joined**.
 
 ### 2️⃣ **Commit Phase (Hiding Choices)**
-- Each player **concatenates their choice with a random string**.
+- Each player **concatenates their choice with a random string**, which you can do with `generateRandomInput(choice)` function and keep the output for commit and reveal later on.
 - The resulting value is **hashed** and stored via the `commitChoice()` function.
 - This prevents the opponent from knowing the first player's choice (**prevents front-running**).
 
@@ -67,9 +67,10 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 
 ### 5️⃣ **Timeout Handling (Ensuring ETH Doesn't Get Locked)**
 - If **Player 1 joins but no Player 2 joins within X minutes**, Player 1 can **withdraw their ETH**.
-- If **one player reveals but the other doesn’t within Y minutes**, both players get **refunded equally**.
+- If **one player commits or reveals but the other doesn’t within Y minutes**, both players get **refunded equally**.
+- If **no players commit or reveal within Y minutes**, both players get **refunded equally**.
 - This prevents ETH from being **stuck in the contract forever**.
-
+- And it will reset the game after refunded.
 ---
 
 ## 📌 Code Functions
@@ -243,6 +244,44 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 - reset ค่าต่างๆ (numPlayer, reward, numRevealed)
 - reset ค่าเวลาให้เริ่มคิด startTime ใหม่
 
+### 6️⃣ อธิบายโค้ดการที่อนุญาตให้คนที่จะเล่นเกมส์นี้ได้ต้องใช้่ account จาก 4 account ที่กำหนดเท่านั้น
+    address[4] public whitelistedAddresses = [
+        0x5B38Da6a701c568545dCfcB03FcB875f56beddC4,
+        0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2,
+        0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db,
+        0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB
+    ];
+    
+    function isWhitelisted(address _player) public view returns (bool) {
+        for (uint i = 0; i < whitelistedAddresses.length; i++) {
+            if (whitelistedAddresses[i] == _player) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function addPlayer() public payable {
+        require(isWhitelisted(msg.sender), "Not authorized to play.");
+        require(numPlayer < 2, "Cannot join: Maximum players reached.");
+        if (numPlayer > 0) {
+            require(msg.sender != players[0]);
+        }
+        require(msg.value == 1 ether, "Must bet 1 ETH.");
+        reward += msg.value;
+        player_not_played[msg.sender] = true;
+        players.push(msg.sender);
+        numPlayer++;
+
+        if (numPlayer == 1) {
+            timeUnit.setStartTime();
+        } else if (numPlayer == 2) {
+            timeUnit.setStartTime();
+        }
+    }
+- จะทำการตรวจสอบว่าผู้เล่นอยู่ใน whitelist หรือไม่ และตรวจสอบว่ามีผู้เล่นเต็ม 2 คนหรือยัง
+- เริ่มการนับเวลาเมื่อผู้เล่นเข้า 1 คน เผื่อในกรณีที่ไม่มีผู้เล่นอีกคนเข้ามาในระยะเวลาที่กำหนด
+- หากมีผู้เล่นอีกคนเข้ามาจะทำการนับเวลาใหม่อีกครั้ง เพื่อใช้คิดในกรณีที่ไม่มีการ commit หรือ reveal ในระยะเวลาที่กำหนด
 ---
 
 ## 📌 How to Deploy
