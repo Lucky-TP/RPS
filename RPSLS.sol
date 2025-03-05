@@ -126,7 +126,6 @@ contract RPSLS {
 
     function refundIfNoOpponent() public {
         require(numPlayer == 1, "Can only withdraw if waiting for an opponent.");
-        // require(players[0] == msg.sender, "Only Player 1 can withdraw.");
         require(timeUnit.elapsedMinutes() >= PLAYER_JOIN_TIMEOUT_MINUTES, "Not Timeout Yet.");
 
         // Refund to only 1 player
