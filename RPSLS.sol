@@ -15,10 +15,10 @@ contract RPSLS {
     uint public numRevealed = 0;
 
     uint public revealStartTime;
-    uint256 public constant PLAYER_JOIN_TIMEOUT = 1; // Timeout if another player does not join
-    uint256 public constant REVEAL_TIMEOUT = 2; // Timeout if a player does not reveal
-    event PlayerWithdraw(address player, uint amount);
-    event PlayerForfeited(address forfeiter, address winner, uint amount);
+    uint256 public constant PLAYER_JOIN_TIMEOUT_MINUTES = 1; // Timeout if another player does not join (Handle only for minutes unit)
+    uint256 public constant REVEAL_TIMEOUT_MINUTES = 1; // Timeout if a player does not reveal (Handle only for minutes unit)
+    event PlayerRefundIfNoOpponent(address player, uint amount);
+    event PlayersRefundIfNoReveal(address player0, address player1, uint amount);
 
     mapping(address => uint) public player_choice; // 0 - Rock, 1 - Paper , 2 - Scissors, 3 - Spock, 4 - Lizard
     mapping(address => bool) public player_not_played;
@@ -57,14 +57,25 @@ contract RPSLS {
         return commitReveal.getHash(data);
     }
 
+    function isPlayer(address _player) public view returns (bool) {
+        return (_player == players[0] || _player == players[1]);
+    }
+
     function commitChoice(bytes32 dataHash) public {
         require(numPlayer == 2, "Need 2 players.");
+        require(isPlayer(msg.sender), "You are not a player in this game.");
+        require(numRevealed == 0, "Can't change choice because someone has revealed.");
         commitReveal.commit(msg.sender, dataHash);
     }
 
     function revealChoice(bytes32 revealData) public {
         require(numPlayer == 2, "Game has not started.");
+        require(isPlayer(msg.sender), "You are not a player in this game.");
 
+        bool isPlayer0Committed = commitReveal.getPlayerCommit(players[0]) != bytes32(0);
+        bool isPlayer1Committed = commitReveal.getPlayerCommit(players[1]) != bytes32(0);
+        bool areBothPlayersCommitted = (isPlayer0Committed && isPlayer1Committed);
+        require(areBothPlayersCommitted, "Both players have to committed");
         // Extract commit data from tuple
         bytes32 commit = commitReveal.getPlayerCommit(msg.sender);
         bool isRevealed = commitReveal.getPlayerRevealed(msg.sender);
@@ -76,7 +87,7 @@ contract RPSLS {
         commitReveal.reveal(msg.sender, revealData);
 
         // Extract choice from the last byte of revealData
-        uint choice = uint(uint8(revealData[31])) % 5;
+        uint choice = uint(uint8(revealData[31]));
         player_choice[msg.sender] = choice;
         numRevealed++;
 
@@ -93,13 +104,14 @@ contract RPSLS {
         }
         return false;
     }
+
     function addPlayer() public payable {
         require(isWhitelisted(msg.sender), "Not authorized to play.");
-        require(numPlayer < 2, "Players Full.");
+        require(numPlayer < 2, "Cannot join: Maximum players reached.");
         if (numPlayer > 0) {
             require(msg.sender != players[0]);
         }
-        require(msg.value == 1 ether);
+        require(msg.value == 1 ether, "Must bet 1 ETH.");
         reward += msg.value;
         player_not_played[msg.sender] = true;
         players.push(msg.sender);
@@ -112,52 +124,32 @@ contract RPSLS {
         }
     }
 
-    function withdrawIfNoOpponent() public {
+    function refundIfNoOpponent() public {
         require(numPlayer == 1, "Can only withdraw if waiting for an opponent.");
-        require(players[0] == msg.sender, "Only Player 0 can withdraw.");
-        require(timeUnit.elapsedMinutes() >= PLAYER_JOIN_TIMEOUT, "Not Timeout Yet");
+        // require(players[0] == msg.sender, "Only Player 1 can withdraw.");
+        require(timeUnit.elapsedMinutes() >= PLAYER_JOIN_TIMEOUT_MINUTES, "Not Timeout Yet.");
 
-        address payable player = payable(players[0]);
-        uint amount = reward;
-        
+        // Refund to only 1 player
+        payable(players[0]).transfer(reward);
+
+        emit PlayerRefundIfNoOpponent(players[0], reward);
+
         resetGame();
-        player.transfer(amount);
-        
-        emit PlayerWithdraw(player, amount);
     }
 
-    function forfeitUnresponsivePlayer() public {
-        require(numPlayer == 2, "Game not started.");
+    function refundIfNoReveal() public {
+        require(numPlayer == 2, "Game not started");
         require(numRevealed < 2, "Both players have revealed.");
-        require(timeUnit.elapsedMinutes() >= REVEAL_TIMEOUT, "Reveal period not over yet.");
+        require(timeUnit.elapsedMinutes() >= REVEAL_TIMEOUT_MINUTES, "Reveal period not over yet.");
 
-        address forfeiter;
-        address payable receiver;
+        // If 1 or 2 players didn't reveal within the time, so refund both equally
+        payable(players[0]).transfer(reward / 2);
+        payable(players[1]).transfer(reward / 2);
 
-        if (player_choice[players[0]] == 0 && player_choice[players[1]] == 0) {
-            // Both players failed to reveal → Refund both
-            payable(players[0]).transfer(reward / 2);
-            payable(players[1]).transfer(reward / 2);
-            resetGame();
-            return;
-        } else if (player_choice[players[0]] == 0) {
-            // Player 0 did not reveal, refund Player 1
-            forfeiter = players[0];
-            receiver = payable(players[1]);
-        } else {
-            // Player 1 did not reveal, refund Player 0
-            forfeiter = players[1];
-            receiver = payable(players[0]);
-        }
+        emit PlayersRefundIfNoReveal(players[0], players[1], reward);
 
-        uint refundAmount = reward / 2;
         resetGame();
-        receiver.transfer(refundAmount);
-
-        emit PlayerForfeited(forfeiter, receiver, refundAmount);
     }
-
-
 
     function _checkWinnerAndPay() private {
         uint p0Choice = player_choice[players[0]];
@@ -191,5 +183,6 @@ contract RPSLS {
         numPlayer = 0;
         reward = 0;
         numRevealed = 0;
+        timeUnit.setStartTime();
     }
 }
