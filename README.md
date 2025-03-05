@@ -46,7 +46,7 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 ---
 
 ## 📌 How the Game Works
-
+### Choices 0 - Rock, 1 - Paper , 2 - Scissors, 3 - Spock, 4 - Lizard
 ### 1️⃣ **Players Join**
 - Only **whitelisted** accounts can play.
 - Players must **stake 1 ETH** to participate.
