@@ -37,9 +37,11 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 ## 📌 Smart Contracts Included
 | **File** | **Description** |
 |----------|--------------|
-| `RPSLS.sol` | The main game contract implementing Rock, Paper, Scissors, Lizard, Spock with commit-reveal logic. |
+| `RPSLS.sol` | The main game contract implementing Rock, Paper, Scissors, Lizard, Spock with commit-reveal and time-unit logic. |
+| `RPS.sol` | The Original game contract for Rock, Paper, Scissors without commit-reveal and time-unit logic. |
 | `CommitReveal.sol` | A separate contract handling **commit-reveal** to prevent front-running. |
 | `TimeUnit.sol` | A contract handling **time-based logic** to avoid fund lock issues. |
+| `Convert.sol` | A contract handling convert, getHash, and getAddress functions. |
 
 ---
 
