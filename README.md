@@ -140,9 +140,9 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
           commitReveal.commit(msg.sender, dataHash);
       }
 
--โดยจะทำการตรวจสอบว่ามีผู้เล่นเข้ามาแล้ว 2 คนหรือไม่ และตรวจสอบว่าคนที่กด commit ใช้ผู้เล่น 1 ใน 2 คนนั้นหรือไม่
--ต่อมาเราควรเช็กว่ามีคน revealed ไปแล้วรึยังจาก numRevealed เพราะถ้าหากมีคน revealed แล้วเราไม่ควรให้อีกคนหนึ่งเปลี่ยนช้อยส์ใน commit ได้ (ป้องกันเรื่อง front-running ด้วย เพราะถ้าอีกคนใส่ revealData แล้ว เราสามารถดูช้อยส์ของเขาได้ เพราะงั้นจึงห้ามเปลี่ยน commit หลังมีคน revealed)
--และทำการใช้ฟังก์ชัน commit จาก CommitReveal (ผมได้ทำการเปลี่ยนแปลงโค้ดใน CommitReveal ให้เก็บค่าตาม address ที่ส่งไปได้ ซึ่งก็คือ msg.sender) 
+- โดยจะทำการตรวจสอบว่ามีผู้เล่นเข้ามาแล้ว 2 คนหรือไม่ และตรวจสอบว่าคนที่กด commit ใช้ผู้เล่น 1 ใน 2 คนนั้นหรือไม่
+- ต่อมาเราควรเช็กว่ามีคน revealed ไปแล้วรึยังจาก numRevealed เพราะถ้าหากมีคน revealed แล้วเราไม่ควรให้อีกคนหนึ่งเปลี่ยนช้อยส์ใน commit ได้ (ป้องกันเรื่อง front-running ด้วย เพราะถ้าอีกคนใส่ revealData แล้ว เราสามารถดูช้อยส์ของเขาได้ เพราะงั้นจึงห้ามเปลี่ยน commit หลังมีคน revealed)
+- และทำการใช้ฟังก์ชัน commit จาก CommitReveal (ผมได้ทำการเปลี่ยนแปลงโค้ดใน CommitReveal ให้เก็บค่าตาม address ที่ส่งไปได้ ซึ่งก็คือ msg.sender) 
 
 ### 3️⃣ อธิบายโค้ดส่วนที่จัดการกับความล่าช้าที่ผู้เล่นไม่ครบทั้งสองคนเสียที (กรณีปัญหาเงินของ player 0 อาจถูกล๊อกไว้ ถ้าไม่มี player 1 มาลงขันต่อ)
 
@@ -218,12 +218,12 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
         }
         resetGame();
       }
--วิธีตรวจสอบว่าใครชนะเราจะดึงข้อมูลมาจาก player_choice และกำหนดไปใน p0Choice กับ p1Choice และกำหนด address ของแต่ละ account
--เราจะใช้ logic ที่คล้ายๆกับ RPS แต่จะเปลี่ยนโดยเพิ่มเงื่อนไข (choice + 3) เข้ามา และเปลี่ยนจากเดิมที่ %3 เป็น %5 ซึ่งสามารถดูได้ตามรูปวิธีการเล่นจากใน https://bigbangtheory.fandom.com/wiki/Rock,_Paper,_Scissors,_Lizard,_Spock
--ซึ่งถ้าหาก choice ที่ (choice1 + 1) % 5 หรือ (choice1 + 3) % 5 แล้วตรงกับ choice2 ของอีกคน คนที่เลือกในรูปแบบ choice1 จะแพ้
--เพราะฉะนั้นเราจะโอนเงินให้ผู้ที่ชนะ
--และเมื่อมีการเสมอจะโอนเงินคืนให้เท่าๆกัน
--และทำการ resetGame()
+- วิธีตรวจสอบว่าใครชนะเราจะดึงข้อมูลมาจาก player_choice และกำหนดไปใน p0Choice กับ p1Choice และกำหนด address ของแต่ละ account
+- เราจะใช้ logic ที่คล้ายๆกับ RPS แต่จะเปลี่ยนโดยเพิ่มเงื่อนไข (choice + 3) เข้ามา และเปลี่ยนจากเดิมที่ %3 เป็น %5 ซึ่งสามารถดูได้ตามรูปวิธีการเล่นจากใน [**Big Bang Theory Fandom - RPSLS**](https://bigbangtheory.fandom.com/wiki/Rock,_Paper,_Scissors,_Lizard,_Spock)
+- ซึ่งถ้าหาก choice ที่ (choice1 + 1) % 5 หรือ (choice1 + 3) % 5 แล้วตรงกับ choice2 ของอีกคน คนที่เลือกในรูปแบบ choice1 จะแพ้
+- เพราะฉะนั้นเราจะโอนเงินให้ผู้ที่ชนะ
+- และเมื่อมีการเสมอจะโอนเงินคืนให้เท่าๆกัน
+- และทำการ resetGame()
 
 ### 5️⃣ อธิบายโค้ดการ Reset Game
     function resetGame() private {
