@@ -246,7 +246,7 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 - reset ค่าต่างๆ (numPlayer, reward, numRevealed)
 - reset ค่าเวลาให้เริ่มคิด startTime ใหม่
 
-### 6️⃣ อธิบายโค้ดการที่อนุญาตให้คนที่จะเล่นเกมส์นี้ได้ต้องใช้่ account จาก 4 account ที่กำหนดเท่านั้น
+### 6️⃣ อธิบายโค้ดการที่อนุญาตให้คนที่จะเล่นเกมส์นี้ได้ต้องใช้ account จาก 4 account ที่กำหนดเท่านั้น
     address[4] public whitelistedAddresses = [
         0x5B38Da6a701c568545dCfcB03FcB875f56beddC4,
         0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2,
