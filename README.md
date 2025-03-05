@@ -94,7 +94,7 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 - และต่อมาจะทำการ resetGame() เพื่อให้เริ่มเกมใหม่ได้
   
 #### อีกแบบหนึ่งจะเป็นการ refund ถ้าเกิดว่าผู้เล่นไม่ยอมกด reveal ซึ่งทำให้เกิดการ lock เงินไว้
-      function refundIfNoReveal() public {
+    function refundIfNoReveal() public {
         require(numPlayer == 2, "Game not started");
         require(numRevealed < 2, "Both players have revealed.");
         require(timeUnit.elapsedMinutes() >= REVEAL_TIMEOUT_MINUTES, "Reveal period not over yet.");
