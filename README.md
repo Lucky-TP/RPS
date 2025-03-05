@@ -123,16 +123,18 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
         randBytes &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00;
         
         // Add choice to the last byte
-        bytes32 dataInput = randBytes | bytes32(uint256(choice)); 
+        bytes32 revealData = randBytes | bytes32(uint256(choice)); 
 
-        // Return both the raw input and its hash
-        return (dataInput, keccak256(abi.encodePacked(dataInput)));
+        // Compute the commit hash (dataHash)
+        bytes32 dataHash = keccak256(abi.encodePacked(revealData));
+
+        return (revealData, dataHash);
     }
 - ผมเปลี่ยน logic ในการสุ่มจาก ตัวอย่าง choice_hiding_v2.ipynb ให้มาอยู่ใน contract ของ RPSLS เลยจะได้เล่นได้ง่ายขึ้น
 - โค้ดในส่วนนี้จะเป็นการซ่อน choice โดยให้ผู้เล่นเลือกเลข 0 ถึง 4 และต่อมาจะทำการสุ่ม random bytes โดยใช้ keccak256 กับ block.timestamp, msg.sender (ข้อเสียคือมันไม่ได้ truly random)
 - และนำ choice ไปต่อกับ random string ที่สร้างมา
-- และ return ค่า dataInput (เป็นค่าที่ random + choice มา ) กับ ค่า ที่เป็น hashed ของ dataInput ประมาณว่า hash(dataInput)
-- เมื่อสุ่มแล้วให้เก็บค่า dataInput และ hash(dataInput) ไว้ใช้สำหรับการ reveal และ commit
+- และ return ค่า revealData (เป็นค่าที่ random + choice มา ) กับ ค่าที่เป็น hashed จาก revealData ซึ่งคือ dataHash
+- เมื่อสุ่มแล้วให้เก็บค่า revealData ไว้ใช้สำหรับ reveal และ dataHash ไว้ใช้สำหรับการ commit
 
       function commitChoice(bytes32 dataHash) public {
           require(numPlayer == 2, "Need 2 players.");
@@ -289,6 +291,20 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 - Deploy CommitReveal.sol
 - Deploy TimeUnit.sol
 - Deploy RPSLS.sol, passing the addresses of CommitReveal and TimeUnit.
+
+---
+
+## 📌 How to Play
+
+### 🎮 **Playing the Game**  
+1️⃣ **Two whitelisted players join by sending 1 ETH each.**  
+2️⃣ **Each player generates their `revealData and dataHash` using `generateRandomInput(choice)`.**  
+3️⃣ **Players commit their choice using `commitChoice(dataHash)`.**  
+4️⃣ **Players reveal their choice using `revealChoice(revealData)`.**  
+5️⃣ **The contract verifies choices and determines the winner.**  
+6️⃣ **The winner gets the reward, and the game resets.**  
+7️⃣ **If a player does not reveal, both players are refunded.**  
+8️⃣ **If no second player joins, the first player can withdraw their funds.**  
 
 ---
 
