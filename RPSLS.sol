@@ -47,10 +47,12 @@ contract RPSLS {
         randBytes &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00;
         
         // Add choice to the last byte
-        bytes32 dataInput = randBytes | bytes32(uint256(choice)); 
+        bytes32 revealData = randBytes | bytes32(uint256(choice)); 
 
-        // Return both the raw input and its hash
-        return (dataInput, keccak256(abi.encodePacked(dataInput)));
+        // Compute the commit hash (dataHash)
+        bytes32 dataHash = keccak256(abi.encodePacked(revealData));
+
+        return (revealData, dataHash);
     }
 
     function getHash(bytes32 data) public view returns(bytes32){
