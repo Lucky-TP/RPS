@@ -66,9 +66,9 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 - After rewards are distributed, the game **resets automatically** so new players can join.
 
 ### 5️⃣ **Timeout Handling (Ensuring ETH Doesn't Get Locked)**
-- If **Player 1 joins but no Player 2 joins within X minutes**, Player 1 can **withdraw their ETH**.
-- If **one player commits or reveals but the other doesn’t within Y minutes**, both players get **refunded equally**.
-- If **no players commit or reveal within Y minutes**, both players get **refunded equally**.
+- If **Player 1 joins but no Player 2 joins within X seconds**, Player 1 can **withdraw their ETH**.
+- If **one player reveals but the other doesn’t within Y seconds**, player that revealed get **all reward**.
+- If **no players commit or reveal within Y seconds**, both players get **refunded equally**.
 - This prevents ETH from being **stuck in the contract forever**.
 - And it will reset the game after refunded.
 ---
