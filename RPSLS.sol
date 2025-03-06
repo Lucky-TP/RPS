@@ -37,23 +37,23 @@ contract RPSLS {
         timeUnit = TimeUnit(_timeUnitAddress);
     }
 
-    function generateRandomInput(uint8 choice) public view returns (bytes32, bytes32) {
-        require(choice < 5, "Invalid choice (must be 0-4)");
+    // function generateRandomInput(uint8 choice) public view returns (bytes32, bytes32) {
+    //     require(choice < 5, "Invalid choice (must be 0-4)");
 
-        // Generate 31 random bytes using keccak256 (pseudo-random)
-        bytes32 randBytes = keccak256(abi.encodePacked(block.timestamp, msg.sender));
+    //     // Generate 31 random bytes using keccak256 (pseudo-random)
+    //     bytes32 randBytes = keccak256(abi.encodePacked(block.timestamp, msg.sender));
 
-        // Clear the last byte to zero
-        randBytes &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00;
+    //     // Clear the last byte to zero
+    //     randBytes &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00;
         
-        // Add choice to the last byte
-        bytes32 revealHash = randBytes | bytes32(uint256(choice)); 
+    //     // Add choice to the last byte
+    //     bytes32 revealHash = randBytes | bytes32(uint256(choice)); 
 
-        // Compute the commit hash (dataHash)
-        bytes32 dataHash = keccak256(abi.encodePacked(revealHash));
+    //     // Compute the commit hash (dataHash)
+    //     bytes32 dataHash = keccak256(abi.encodePacked(revealHash));
 
-        return (revealHash, dataHash);
-    }
+    //     return (revealHash, dataHash);
+    // }
 
     function isWhitelisted(address _player) public view returns (bool) {
         for (uint i = 0; i < whitelistedAddresses.length; i++) {
