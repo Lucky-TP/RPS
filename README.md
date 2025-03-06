@@ -79,18 +79,16 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 
     function refundIfNoOpponent() public {
         require(numPlayer == 1, "Can only withdraw if waiting for an opponent.");
-        require(timeUnit.elapsedMinutes() >= PLAYER_JOIN_TIMEOUT_MINUTES, "Not Timeout Yet.");
+        require(timeUnit.elapsedSeconds() >= PLAYER_JOIN_TIMEOUT_SECONDS, "Not Timeout Yet.");
 
         // Refund to only 1 player
         payable(players[0]).transfer(reward);
-
-        emit PlayerRefundIfNoOpponent(players[0], reward);
 
         resetGame();
     }
     
 - โดยในโค้ดนี้จะตรวจสอบว่ามี player แค่ 1 คนใช่หรือไม่ และต่อมาจะเช็กว่าเกินกำหนดเวลาในหน่วยนาที ที่ตั้งไว้หรือไม่
-- เมื่อผ่านเงื่อนไขแล้ว หลังจากนั้นจะทำการ refund ให้ player คนเดียว ที่อยู่ในระบบ และ ทำการเก็บ log โดยใช้ emit กับ event PlayerRefundIfNoOpponent(players[0], reward);
+- เมื่อผ่านเงื่อนไขแล้ว หลังจากนั้นจะทำการ refund ให้ player คนเดียว ที่อยู่ในระบบ
 - และต่อมาจะทำการ resetGame() เพื่อให้เริ่มเกมใหม่ได้
   
 #### อีกแบบหนึ่งจะเป็นการ refund ถ้าเกิดว่าผู้เล่นไม่ยอมกด reveal ซึ่งทำให้เกิดการ lock เงินไว้
@@ -177,18 +175,16 @@ This project implements a **secure and fair blockchain-based Rock, Paper, Scisso
 
     function refundIfNoOpponent() public {
         require(numPlayer == 1, "Can only withdraw if waiting for an opponent.");
-        require(timeUnit.elapsedMinutes() >= PLAYER_JOIN_TIMEOUT_MINUTES, "Not Timeout Yet.");
+        require(timeUnit.elapsedSeconds() >= PLAYER_JOIN_TIMEOUT_SECONDS, "Not Timeout Yet.");
 
         // Refund to only 1 player
         payable(players[0]).transfer(reward);
-
-        emit PlayerRefundIfNoOpponent(players[0], reward);
 
         resetGame();
     }
     
 - โดยในโค้ดนี้จะตรวจสอบว่ามี player แค่ 1 คนใช่หรือไม่ และต่อมาจะเช็กว่าเกินกำหนดเวลาในหน่วยนาที ที่ตั้งไว้หรือไม่
-- เมื่อผ่านเงื่อนไขแล้ว หลังจากนั้นจะทำการ refund ให้ player คนเดียว ที่อยู่ในระบบ และ ทำการเก็บ log โดยใช้ emit กับ event PlayerRefundIfNoOpponent(players[0], reward);
+- เมื่อผ่านเงื่อนไขแล้ว หลังจากนั้นจะทำการ refund ให้ player คนเดียว ที่อยู่ในระบบ
 - และต่อมาจะทำการ resetGame() เพื่อให้เริ่มเกมใหม่ได้
 
 ### 4️⃣ อธิบายโค้ดส่วนทำการ reveal และนำ choice มาตัดสินผู้ชนะ 
