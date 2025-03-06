@@ -43,16 +43,4 @@ contract CommitReveal {
   function getHash(bytes32 data) public pure returns(bytes32){
     return keccak256(abi.encodePacked(data));
   }
-
-  function getPlayerCommit (address player) public view returns (bytes32) {
-    return commits[player].commit;
-  }
-
-  function getPlayerRevealed (address player) public view returns (bool)  {
-    return commits[player].revealed;
-  }
-
-  function resetPlayerCommits (address player) public {
-    delete commits[player];
-  }
 }

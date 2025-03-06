@@ -12,16 +12,17 @@ contract RPSLS {
 
     uint public numPlayer = 0;
     uint public reward = 0;
+    uint public numCommits = 0;
     uint public numRevealed = 0;
 
     uint public revealStartTime;
-    uint256 public constant PLAYER_JOIN_TIMEOUT_MINUTES = 1; // Timeout if another player does not join (Handle only for minutes unit)
-    uint256 public constant REVEAL_TIMEOUT_MINUTES = 1; // Timeout if a player does not reveal (Handle only for minutes unit)
+    uint256 public constant PLAYER_JOIN_TIMEOUT_SECONDS = 30; // Timeout if another player does not join (Handle only for minutes unit)
+    uint256 public constant REVEAL_TIMEOUT_SECONDS = 40; // Timeout if a player does not reveal (Handle only for minutes unit)
     event PlayerRefundIfNoOpponent(address player, uint amount);
-    event PlayersRefundIfNoReveal(address player0, address player1, uint amount);
 
     mapping(address => uint) public player_choice; // 0 - Rock, 1 - Paper , 2 - Scissors, 3 - Spock, 4 - Lizard
-    mapping(address => bool) public player_not_played;
+    mapping(address => bool) public player_not_committed;
+    mapping(address => bool) public player_not_revealed;
 
     address[] public players;
 
@@ -47,16 +48,12 @@ contract RPSLS {
         randBytes &= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00;
         
         // Add choice to the last byte
-        bytes32 revealData = randBytes | bytes32(uint256(choice)); 
+        bytes32 revealHash = randBytes | bytes32(uint256(choice)); 
 
         // Compute the commit hash (dataHash)
-        bytes32 dataHash = keccak256(abi.encodePacked(revealData));
+        bytes32 dataHash = keccak256(abi.encodePacked(revealHash));
 
-        return (revealData, dataHash);
-    }
-
-    function getHash(bytes32 data) public view returns(bytes32){
-        return commitReveal.getHash(data);
+        return (revealHash, dataHash);
     }
 
     function isPlayer(address _player) public view returns (bool) {
@@ -68,29 +65,26 @@ contract RPSLS {
         require(isPlayer(msg.sender), "You are not a player in this game.");
         require(numRevealed == 0, "Can't change choice because someone has revealed.");
         commitReveal.commit(msg.sender, dataHash);
+        if (player_not_committed[msg.sender]) {
+            player_not_committed[msg.sender] = false;
+            timeUnit.setStartTime();
+            numCommits++;
+        }
     }
 
-    function revealChoice(bytes32 revealData) public {
-        require(numPlayer == 2, "Game has not started.");
+    function revealChoice(bytes32 revealHash) public {
+        require(numPlayer == 2, "Need 2 players.");
         require(isPlayer(msg.sender), "You are not a player in this game.");
-
-        bool isPlayer0Committed = commitReveal.getPlayerCommit(players[0]) != bytes32(0);
-        bool isPlayer1Committed = commitReveal.getPlayerCommit(players[1]) != bytes32(0);
-        bool areBothPlayersCommitted = (isPlayer0Committed && isPlayer1Committed);
-        require(areBothPlayersCommitted, "Both players have to committed");
-        // Extract commit data from tuple
-        bytes32 commit = commitReveal.getPlayerCommit(msg.sender);
-        bool isRevealed = commitReveal.getPlayerRevealed(msg.sender);
-
-        require(commit != bytes32(0), "Commit not found.");
-        require(!isRevealed, "Already revealed.");
+        require(numCommits == 2, "Both players have to committed");
 
         // Call reveal in CommitReveal.sol
-        commitReveal.reveal(msg.sender, revealData);
+        commitReveal.reveal(msg.sender, revealHash);
 
-        // Extract choice from the last byte of revealData
-        uint choice = uint(uint8(revealData[31]));
+        // Extract choice from the last byte of revealHash
+        uint choice = uint(uint8(revealHash[31]));
         player_choice[msg.sender] = choice;
+
+        player_not_revealed[msg.sender] = false;
         numRevealed++;
 
         if (numRevealed == 2) {
@@ -111,11 +105,12 @@ contract RPSLS {
         require(isWhitelisted(msg.sender), "Not authorized to play.");
         require(numPlayer < 2, "Cannot join: Maximum players reached.");
         if (numPlayer > 0) {
-            require(msg.sender != players[0]);
+            require(msg.sender != players[0], "Already joined.");
         }
-        require(msg.value == 1 ether, "Must bet 1 ETH.");
+        require(msg.value == 1 ether, "Must stake 1 ETH.");
         reward += msg.value;
-        player_not_played[msg.sender] = true;
+        player_not_committed[msg.sender] = true;
+        player_not_revealed[msg.sender] = true;
         players.push(msg.sender);
         numPlayer++;
 
@@ -128,12 +123,10 @@ contract RPSLS {
 
     function refundIfNoOpponent() public {
         require(numPlayer == 1, "Can only withdraw if waiting for an opponent.");
-        require(timeUnit.elapsedMinutes() >= PLAYER_JOIN_TIMEOUT_MINUTES, "Not Timeout Yet.");
+        require(timeUnit.elapsedSeconds() >= PLAYER_JOIN_TIMEOUT_SECONDS, "Not Timeout Yet.");
 
         // Refund to only 1 player
         payable(players[0]).transfer(reward);
-
-        emit PlayerRefundIfNoOpponent(players[0], reward);
 
         resetGame();
     }
@@ -141,13 +134,19 @@ contract RPSLS {
     function refundIfNoReveal() public {
         require(numPlayer == 2, "Game not started");
         require(numRevealed < 2, "Both players have revealed.");
-        require(timeUnit.elapsedMinutes() >= REVEAL_TIMEOUT_MINUTES, "Reveal period not over yet.");
+        require(timeUnit.elapsedSeconds() >= REVEAL_TIMEOUT_SECONDS, "Reveal period not over yet.");
 
-        // If 1 or 2 players didn't reveal within the time, so refund both equally
-        payable(players[0]).transfer(reward / 2);
-        payable(players[1]).transfer(reward / 2);
-
-        emit PlayersRefundIfNoReveal(players[0], players[1], reward);
+        // 2 players didn't reveal within the time, so refund both equally
+        if (player_not_revealed[players[0]] && player_not_revealed[players[1]]) {
+            payable(players[0]).transfer(reward / 2);
+            payable(players[1]).transfer(reward / 2);
+        } else if (player_not_revealed[players[0]]) {
+            // Player 0 didn't reveal, so Player 1 will win.
+            payable(players[1]).transfer(reward);
+        } else {
+            // Player 1 didn't reveal, so Player 0 will win.
+            payable(players[0]).transfer(reward);
+        }
 
         resetGame();
     }
@@ -176,14 +175,14 @@ contract RPSLS {
 
     function resetGame() private {
         for (uint i = 0; i < players.length; i++) {
-            commitReveal.resetPlayerCommits(players[i]);
             delete player_choice[players[i]];
-            delete player_not_played[players[i]];
+            delete player_not_committed[players[i]];
+            delete player_not_revealed[players[i]];
         }
         delete players;
         numPlayer = 0;
         reward = 0;
+        numCommits = 0;
         numRevealed = 0;
-        timeUnit.setStartTime();
     }
 }
