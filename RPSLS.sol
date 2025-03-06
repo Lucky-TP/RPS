@@ -55,42 +55,6 @@ contract RPSLS {
         return (revealHash, dataHash);
     }
 
-    function isPlayer(address _player) public view returns (bool) {
-        return (_player == players[0] || _player == players[1]);
-    }
-
-    function commitChoice(bytes32 dataHash) public {
-        require(numPlayer == 2, "Need 2 players.");
-        require(isPlayer(msg.sender), "You are not a player in this game.");
-        require(numRevealed == 0, "Can't change choice because someone has revealed.");
-        commitReveal.commit(msg.sender, dataHash);
-        if (player_not_committed[msg.sender]) {
-            player_not_committed[msg.sender] = false;
-            timeUnit.setStartTime();
-            numCommits++;
-        }
-    }
-
-    function revealChoice(bytes32 revealHash) public {
-        require(numPlayer == 2, "Need 2 players.");
-        require(isPlayer(msg.sender), "You are not a player in this game.");
-        require(numCommits == 2, "Both players have to committed");
-
-        // Call reveal in CommitReveal.sol
-        commitReveal.reveal(msg.sender, revealHash);
-
-        // Extract choice from the last byte of revealHash
-        uint choice = uint(uint8(revealHash[31]));
-        player_choice[msg.sender] = choice;
-
-        player_not_revealed[msg.sender] = false;
-        numRevealed++;
-
-        if (numRevealed == 2) {
-            _checkWinnerAndPay();
-        }
-    }
-
     function isWhitelisted(address _player) public view returns (bool) {
         for (uint i = 0; i < whitelistedAddresses.length; i++) {
             if (whitelistedAddresses[i] == _player) {
@@ -117,6 +81,42 @@ contract RPSLS {
             timeUnit.setStartTime();
         } else if (numPlayer == 2) {
             timeUnit.setStartTime();
+        }
+    }
+
+    function isPlayerinGame(address _player) public view returns (bool) {
+        return (_player == players[0] || _player == players[1]);
+    }
+
+    function commitChoice(bytes32 dataHash) public {
+        require(numPlayer == 2, "Need 2 players.");
+        require(isPlayerinGame(msg.sender), "You are not a player in this game.");
+        require(numRevealed == 0, "Can't change choice because someone has revealed.");
+        commitReveal.commit(msg.sender, dataHash);
+        if (player_not_committed[msg.sender]) {
+            player_not_committed[msg.sender] = false;
+            timeUnit.setStartTime();
+            numCommits++;
+        }
+    }
+
+    function revealChoice(bytes32 revealHash) public {
+        require(numPlayer == 2, "Need 2 players.");
+        require(isPlayerinGame(msg.sender), "You are not a player in this game.");
+        require(numCommits == 2, "Both players have to committed");
+
+        // Call reveal in CommitReveal.sol
+        commitReveal.reveal(msg.sender, revealHash);
+
+        // Extract choice from the last byte of revealHash
+        uint choice = uint(uint8(revealHash[31]));
+        player_choice[msg.sender] = choice;
+
+        player_not_revealed[msg.sender] = false;
+        numRevealed++;
+
+        if (numRevealed == 2) {
+            _checkWinnerAndPay();
         }
     }
 
