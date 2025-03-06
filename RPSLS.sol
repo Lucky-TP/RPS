@@ -18,7 +18,6 @@ contract RPSLS {
     uint public revealStartTime;
     uint256 public constant PLAYER_JOIN_TIMEOUT_SECONDS = 30; // Timeout if another player does not join (Handle only for minutes unit)
     uint256 public constant REVEAL_TIMEOUT_SECONDS = 40; // Timeout if a player does not reveal (Handle only for minutes unit)
-    event PlayerRefundIfNoOpponent(address player, uint amount);
 
     mapping(address => uint) public player_choice; // 0 - Rock, 1 - Paper , 2 - Scissors, 3 - Spock, 4 - Lizard
     mapping(address => bool) public player_not_committed;
