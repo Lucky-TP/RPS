@@ -150,25 +150,36 @@ contract RPSLS {
         resetGame();
     }
 
+    function isValidChoice(uint choice) public pure returns (bool) {
+        return choice >= 0 && choice < 5;
+    }
+
     function _checkWinnerAndPay() private {
         uint p0Choice = player_choice[players[0]];
         uint p1Choice = player_choice[players[1]];
         address payable account0 = payable(players[0]);
         address payable account1 = payable(players[1]);
-        // change winner logic to work with Rock, Paper, Scissors, Spock, Lizard
-        if ((p0Choice + 1) % 5 == p1Choice || (p0Choice + 3) % 5 == p1Choice) {
-            // to pay player[1]
-            account1.transfer(reward);
-        }
-        else if ((p1Choice + 1) % 5 == p0Choice || (p1Choice + 3) % 5 == p0Choice) {
-            // to pay player[0]
-            account0.transfer(reward);
-        }
-        else {
-            // to split reward
+
+        if (isValidChoice(p0Choice) && isValidChoice(p1Choice)) {
+            // Winner logic for Rock, Paper, Scissors, Spock, and Lizard game
+            if ((p0Choice + 1) % 5 == p1Choice || (p0Choice + 3) % 5 == p1Choice) {
+                // Player 1 won, so pay player[1]
+                account1.transfer(reward);
+            }
+            else if ((p1Choice + 1) % 5 == p0Choice || (p1Choice + 3) % 5 == p0Choice) {
+                // Player 0 won, so pay player[0]
+                account0.transfer(reward);
+            }
+            else {
+                // draw, so split reward
+                account0.transfer(reward / 2);
+                account1.transfer(reward / 2);
+            }
+        } else {
             account0.transfer(reward / 2);
             account1.transfer(reward / 2);
         }
+
         resetGame();
     }
 
